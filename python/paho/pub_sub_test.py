@@ -20,39 +20,31 @@ class PubSub(object):
         self.logger = logging.getLogger(repr(self))
 
     def __on_connect(self, client, userdata, flags, rc):
-        print('__on_connect')
         self.connect = True
         if self.listener:
             try:
                 self.mqttc.subscribe(self.topic, 1)
-                print('Subscribed to {0}'.format(self.topic))
                 self.logger.debug("Subscribed to: {0}".format(self.topic))
             except Exception as e:
-                print('Sub failed!')
                 self.logger.debug("Subscribe Failed:\n{0}".format(e))
 
         self.logger.debug("Con Log: {0}".format(rc))
 
     def __on_subscribe(self, client, obj, mid, granted_qos):
-        print('__on_subscribe')
         print("Subscribed to Topic: {0} with QoS: {1}\n{2} {3} {4}".format(
             self.topic, str(granted_qos), client, obj[0], mid))
 
     def __on_message(self, client, userdata, msg):
-        print('__on_message')
         self.logger.info("Message: {0}, {1} - {2}".format(userdata, msg.topic, msg.payload))
-        print('message received: '.format(str(msg.payload.decode('utf-8'))))
+        print('message received: {0} '.format(str(msg.payload.decode('utf-8'))))
         print('message topic={0}'.format(msg.topic))
         print('message qos={0}'.format(msg.qos))
         print('message retain flag={0}'.format(msg.retain))
-        print('message {0}'.format(msg.payload))
 
     def __on_log(self, client, userdata, level, buf):
-        print('__on_log')
         self.logger.debug("On Log: {0}, {1}, {2}, {3}".format(client, userdata, level, buf))
 
     def bootstrap_mqtt(self):
-        print('Bootstrap!')
         self.mqttc.on_connect = self.__on_connect
         self.mqttc.on_subscribe = self.__on_subscribe
         self.mqttc.on_message = self.__on_message
@@ -83,7 +75,6 @@ class PubSub(object):
         return self
 
     def start(self):
-        print('Start!')
         self.mqttc.loop_start()
         # self.mqttc.subscribe('#', 1)
 
