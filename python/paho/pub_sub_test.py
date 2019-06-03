@@ -2,7 +2,11 @@ __author__ = 'SuicidalLabRat'
 __version__ = '0.0.1'
 
 
-from getmac import get_mac_address
+#from getmac import get_mac_address
+import sys
+import os
+import re
+import subprocess
 import paho.mqtt.client as paho
 import ssl
 from time import sleep
@@ -95,10 +99,45 @@ class PubSub(object):
                 self.logger.debug("Attempting to connect.")
 
 
+def get_active_mac(iface=''):
+    if sys.platform == 'win32':
+        command = 'Get-NetRoute'
+        power_shell_path = r'C:\WINDOWS\system32\WindowsPowerShell\v1.0\powershell.exe'
+        try:
+            p = subprocess.Popen([power_shell_path, '-ExecutionPolicy', 'Unrestricted', command,
+                                  '|', 'Where-Object -FilterScript {$_.NextHop -Ne "::"}',
+                                  '|', 'Where-Object -FilterScript { $_.NextHop -Ne "0.0.0.0" }',
+                                  '|', 'Where-Object -FilterScript { ($_.NextHop.SubString(0,6) -Ne "fe80::") }',
+                                  '|', 'Get-NetAdapter']
+                                 , stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            output, error = p.communicate()
+            rc = p.returncode
+        except IOError:
+            print('Requires Windows 10 or later.\nRequires PowerShell: {0}'.format(power_shell_path))
+            raise
+        except Exception:
+            raise
+
+        if rc == 0:
+            output = output.decode('utf-8').split('\r\n')
+            if_desc = re.split(r'\s{2,}', str(output[3]))
+            if_mac = if_desc[3].split()
+            return if_mac[0].replace('-', '').lower()
+        else:
+            print('{0} returned {1}.'.format(power_shell_path, rc))
+            return None
+
+    else:
+        for line in os.popen("/sbin/ifconfig"):
+            if line.find('Ether') > -1:
+                mac = line.split()[4]
+                break
+
+
 if __name__ == '__main__':
     thing_name = ""
     try:
-        thing_name = get_mac_address(interface="en0").replace(':', '')
+        thing_name = get_active_mac()
     except Exception as ex:
         print('Failed to get MAC address!\n{0}'.format(ex))
         thing_name = '000000000000'
