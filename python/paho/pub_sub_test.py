@@ -1,10 +1,8 @@
 __author__ = 'SuicidalLabRat'
 __version__ = '0.0.1'
 
-
 import platform
 import sys
-import os
 import re
 import subprocess
 import paho.mqtt.client as paho
@@ -99,10 +97,45 @@ class PubSub(object):
                 self.logger.debug("Attempting to connect.")
 
 
-def get_active_mac(iface=''):
-    print(platform.system())
-    print(sys.platform)
-    if sys.platform == 'win32':
+def get_active_mac():
+    if sys.platform.startswith('linux'):
+        route_default_result = re.findall(b"([\w.][\w.]*'?\w?)", subprocess.check_output(["ip", "route"]))
+        default_iface = route_default_result[4].decode('utf-8')
+        if 'redaptive' in platform.uname().node:
+            default_iface = 'eth0'
+        if route_default_result:
+            mac_file = '/sys/class/net/{0}/address'.format(default_iface)
+            try:
+                with open(mac_file, 'r') as file:
+                    mac = file.read().replace(':', '').lower()
+            except IOError:
+                print('Couldnt get mac from {0}\nMaybe this is a Linux distribution that doesnt support this convention'
+                      .format(mac_file))
+                raise
+            except Exception:
+                print('Couldnt get mac from {0}'.format(mac_file))
+                raise
+            return mac
+
+    elif sys.platform == 'darwin':
+        route_default_result = subprocess.check_output(["route", "get", "default"])
+        default_iface = re.search(b"(?:interface:.)(.*)", route_default_result).group(1).decode('utf-8')
+        try:
+            result = subprocess.check_output([
+                'ifconfig',
+                default_iface],
+                stderr=subprocess.STDOUT,
+                universal_newlines=True)
+        except subprocess.CalledProcessError:
+            raise
+
+        address = MAC_ADDRESS_R.search(result.lower().replace(':', ''))
+        if address:
+            address = address.group(0)
+
+        return address
+
+    elif sys.platform.startswith('win'):
         command = 'Get-NetRoute'
         power_shell_path = r'C:\WINDOWS\system32\WindowsPowerShell\v1.0\powershell.exe'
         try:
@@ -128,42 +161,9 @@ def get_active_mac(iface=''):
         else:
             print('Failed to get MAC address.\n{0} returned {1}.'.format(power_shell_path, rc))
             return None
-
-    elif sys.platform == 'darwin':
-        route_default_result = subprocess.check_output(["route", "get", "default"])
-        # gw = re.search(b"\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}", route_default_result).group(0)
-        default_iface = re.search(b"(?:interface:.)(.*)", route_default_result).group(1).decode('utf-8')
-        """
-        Returns currently-set MAC address of given interface. This is
-        distinct from the interface's hardware MAC address.
-        """
-
-        try:
-            result = subprocess.check_output([
-                'ifconfig',
-                default_iface],
-                stderr=subprocess.STDOUT,
-                universal_newlines=True)
-        except subprocess.CalledProcessError:
-            return None
-
-        address = MAC_ADDRESS_R.search(result.lower().replace(':', ''))
-        if address:
-            address = address.group(0)
-
-        return address
-
-    elif sys.platform().startswith('linux'):
-        route_default_result = re.findall(b"([\w.][\w.]*'?\w?)", subprocess.check_output(["ip", "route"]))
-        # gw = route_default_result[2]
-        default_iface = route_default_result[4].decode('utf-8')
-        if 'redaptive' in platform.uname().node:
-            default_iface = 'eth0'
-        if route_default_result:
-            # return gw, default_iface
-            return default_iface
-        else:
-            print("(x) Could not read default routes.")
+    else:
+        print("Failed to get a MAC address from the host {0} system.".format(sys.platform()))
+        return None
 
 
 # Regex to validate a MAC address, as 00-00-00-00-00-00 or
@@ -189,7 +189,7 @@ if __name__ == '__main__':
 
     dev_env = {
         'awshost': 'a372uklyvnvbpu-ats.iot.us-east-2.amazonaws.com',
-        'awsport': 443,
+        'awsport': 8883,
         'keepalive': 60,
         'ca': 'certs/dev/rootCa.crt',
         'cert': 'certs/dev/client.crt',
