@@ -2,7 +2,7 @@ __author__ = 'SuicidalLabRat'
 __version__ = '0.0.1'
 
 
-#from getmac import get_mac_address
+import platform
 import sys
 import os
 import re
@@ -100,6 +100,8 @@ class PubSub(object):
 
 
 def get_active_mac(iface=''):
+    print(platform.system())
+    print(sys.platform)
     if sys.platform == 'win32':
         command = 'Get-NetRoute'
         power_shell_path = r'C:\WINDOWS\system32\WindowsPowerShell\v1.0\powershell.exe'
@@ -113,7 +115,7 @@ def get_active_mac(iface=''):
             output, error = p.communicate()
             rc = p.returncode
         except IOError:
-            print('Requires Windows 10 or later.\nRequires PowerShell: {0}'.format(power_shell_path))
+            print('Requires Windows 10 or later. Requires PowerShell: {0}'.format(power_shell_path))
             raise
         except Exception:
             raise
@@ -124,15 +126,58 @@ def get_active_mac(iface=''):
             if_mac = if_desc[3].split()
             return if_mac[0].replace('-', '').lower()
         else:
-            print('{0} returned {1}.'.format(power_shell_path, rc))
+            print('Failed to get MAC address.\n{0} returned {1}.'.format(power_shell_path, rc))
             return None
 
-    else:
-        for line in os.popen("/sbin/ifconfig"):
-            if line.find('Ether') > -1:
-                mac = line.split()[4]
-                break
+    elif sys.platform == 'darwin':
+        route_default_result = subprocess.check_output(["route", "get", "default"])
+        # gw = re.search(b"\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}", route_default_result).group(0)
+        default_iface = re.search(b"(?:interface:.)(.*)", route_default_result).group(1).decode('utf-8')
+        """
+        Returns currently-set MAC address of given interface. This is
+        distinct from the interface's hardware MAC address.
+        """
 
+        try:
+            result = subprocess.check_output([
+                'ifconfig',
+                default_iface],
+                stderr=subprocess.STDOUT,
+                universal_newlines=True)
+        except subprocess.CalledProcessError:
+            return None
+
+        address = MAC_ADDRESS_R.search(result.lower().replace(':', ''))
+        if address:
+            address = address.group(0)
+
+        return address
+
+    elif sys.platform().startswith('linux'):
+        route_default_result = re.findall(b"([\w.][\w.]*'?\w?)", subprocess.check_output(["ip", "route"]))
+        # gw = route_default_result[2]
+        default_iface = route_default_result[4].decode('utf-8')
+        if 'redaptive' in platform.uname().node:
+            default_iface = 'eth0'
+        if route_default_result:
+            # return gw, default_iface
+            return default_iface
+        else:
+            print("(x) Could not read default routes.")
+
+
+# Regex to validate a MAC address, as 00-00-00-00-00-00 or
+# 00:00:00:00:00:00 or 000000000000.
+MAC_ADDRESS_R = re.compile(r"""
+   ([0-9A-F]{1,2})[:-]?
+   ([0-9A-F]{1,2})[:-]?
+   ([0-9A-F]{1,2})[:-]?
+   ([0-9A-F]{1,2})[:-]?
+   ([0-9A-F]{1,2})[:-]?
+   ([0-9A-F]{1,2})
+   """,
+       re.I | re.VERBOSE
+)
 
 if __name__ == '__main__':
     thing_name = ""
@@ -140,8 +185,7 @@ if __name__ == '__main__':
         thing_name = get_active_mac()
     except Exception as ex:
         print('Failed to get MAC address!\n{0}'.format(ex))
-        thing_name = '000000000000'
-        #raise
+        raise
 
     dev_env = {
         'awshost': 'a372uklyvnvbpu-ats.iot.us-east-2.amazonaws.com',
@@ -164,5 +208,6 @@ if __name__ == '__main__':
     mqtt_topic = '$aws/things/{0}/publish'.format(thing_name)
     mqtt_msg = 'Test Publish: {0}'.format(thing_name)
 
-    print("Running...")
-    PubSub(listener=True, topic=mqtt_topic, mqtt_client_id=thing_name).bootstrap_mqtt(dev_env).start(mqtt_msg)
+    if thing_name:
+        print("Running...")
+        PubSub(listener=True, topic=mqtt_topic, mqtt_client_id=thing_name).bootstrap_mqtt(dev_env).start(mqtt_msg)
