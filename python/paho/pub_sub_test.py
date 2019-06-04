@@ -47,8 +47,10 @@ class PubSub(object):
         self.logger.debug("Con Log: {0}".format(rc))
 
     def __on_subscribe(self, client, obj, mid, granted_qos):
-        print("Subscribed to Topic: {0} with QoS: {1}\n{2} {3} {4}".format(
-            self.topic, str(granted_qos), client, obj[0], mid))
+        print("Subscribed to Topic: {0} with QoS: {1}\n{2} {3}".format(
+           self.topic, str(granted_qos), client, mid))
+        #print("Subscribed to Topic: {0} with QoS: {1}\n{2} {3} {4}".format(
+        #   self.topic, str(granted_qos), client, obj[0], mid))
 
     def __on_message(self, client, userdata, msg):
         self.logger.info("Message: {0}, {1} - {2}".format(userdata, msg.topic, msg.payload))
@@ -77,9 +79,12 @@ class PubSub(object):
                                tls_version=ssl.PROTOCOL_TLSv1_2,
                                ciphers=None)
 
-        result_of_connection = self.mqttc.connect(config['awshost'], config['awsport'], keepalive=config['keepalive'])
+        try:
+            result_of_connection = self.mqttc.connect(config['awshost'], config['awsport'], keepalive=config['keepalive'])
+        except Exception as e:
+            print('Failed MQTT connect!\n{0}'.format(e))
 
-        if result_of_connection == 0:
+        if 'result_of_connection' in locals() and result_of_connection == 0:
             self.logger.info('Connected to {0}'.format(config['awshost']))
             self.connect = True
 
@@ -107,7 +112,7 @@ def get_active_mac():
             mac_file = '/sys/class/net/{0}/address'.format(default_iface)
             try:
                 with open(mac_file, 'r') as file:
-                    mac = file.read().replace(':', '').lower()
+                    mac = file.read().replace(':', '').lower().strip()
             except IOError:
                 print('Couldnt get mac from {0}\nMaybe this is a Linux distribution that doesnt support this convention'
                       .format(mac_file))
