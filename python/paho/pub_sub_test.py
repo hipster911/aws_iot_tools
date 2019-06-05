@@ -47,10 +47,8 @@ class PubSub(object):
         self.logger.debug("Con Log: {0}".format(rc))
 
     def __on_subscribe(self, client, obj, mid, granted_qos):
-        print("Subscribed to Topic: {0} with QoS: {1}\n{2} {3}".format(
-           self.topic, str(granted_qos), client, mid))
-        #print("Subscribed to Topic: {0} with QoS: {1}\n{2} {3} {4}".format(
-        #   self.topic, str(granted_qos), client, obj[0], mid))
+        print("Subscribed to Topic: {0} with QoS: {1}\n".format(
+           self.topic, str(granted_qos[0]), client, mid))
 
     def __on_message(self, client, userdata, msg):
         self.logger.info("Message: {0}, {1} - {2}".format(userdata, msg.topic, msg.payload))
@@ -69,7 +67,10 @@ class PubSub(object):
         self.mqttc.on_log = self.__on_log
 
         if config['awsport'] == 443:
-            ssl_context = self.ssl_alpn(ca=config['ca'], cert=config['cert'], key=config['key'])
+            ssl_context = self.ssl_alpn(ca=config['ca'],
+                                        cert=config['cert'],
+                                        key=config['key'])
+
             self.mqttc.tls_set_context(context=ssl_context)
         else:
             self.mqttc.tls_set(config['ca'],
