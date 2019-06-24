@@ -2,6 +2,7 @@ __author__ = 'SuicidalLabRat'
 __version__ = '0.0.1'
 
 import platform
+import random
 import sys
 import re
 import subprocess
@@ -58,7 +59,7 @@ class PubSub(object):
         print('message retain flag={0}'.format(msg.retain))
 
     def __on_log(self, client, userdata, level, buf):
-        self.logger.debug("On Log: {0}, {1}, {2}, {3}".format(client, userdata, level, buf))
+        self.logger.debug("On Log: {0}, {1}, {2}, {3}".format(client[0], userdata, level, buf))
 
     def bootstrap_mqtt(self, config):
         self.mqttc.on_connect = self.__on_connect
@@ -98,7 +99,8 @@ class PubSub(object):
         while True:
             sleep(2)
             if self.connect:
-                self.mqttc.publish(self.topic, msg, qos=1)
+                #  self.mqttc.publish(self.topic, msg, qos=1)
+                pass
             else:
                 self.logger.debug("Attempting to connect.")
 
@@ -186,6 +188,7 @@ MAC_ADDRESS_R = re.compile(r"""
 )
 
 if __name__ == '__main__':
+    job_id = random.getrandbits(128)  # .to_bytes(16, 'little')
     thing_name = ""
     try:
         thing_name = get_active_mac()
@@ -211,8 +214,12 @@ if __name__ == '__main__':
         'key': 'certs/prod/client.key'
     }
 
-    mqtt_topic = '$aws/things/{0}/publish'.format(thing_name)
-    mqtt_msg = 'Test Publish: {0}'.format(thing_name)
+    #  mqtt_topic = '$aws/things/{0}/publish'.format(thing_name)
+    #  mqtt_topic = '$aws/things/{0}/jobs/notify-next'.format(thing_name)
+    print('Job ID: {0}'.format(str(job_id)))
+    mqtt_topic = '$aws/things/{0}/jobs/{1}/update'.format(thing_name, job_id)
+    #  mqtt_msg = 'Test Publish: {0}'.format(thing_name)
+    mqtt_msg = ''
 
     if thing_name:
         print("Running...")

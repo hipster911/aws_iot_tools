@@ -1,0 +1,2 @@
+# The Mosquitto Sub CLI
+mosquitto_sub --cert client.crt --key client.key --cafile rootCA.crt -h XXXXXXXXYYYYY-ats.iot.us-east-2.amazonaws.com -p 8883 -t 'test/+'

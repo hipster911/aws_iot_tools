@@ -1,0 +1,6 @@
+# On MAC: brew install mosquitto
+# On Ubuntu: sudo apt-get install mosquitto-clients
+
+# GUI Client(s)
+# https://github.com/eclipse/paho.mqtt-spy
+# https://github.com/eclipse/paho.mqtt-spy/releases
