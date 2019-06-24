@@ -1,0 +1,22 @@
+# THE BELOW FUNCTION AND FUNCTION CALL SHOULD BE APPENDED TO THE BASHRC FILE IN
+# THE HOME DIRECTORY OF THE DEFAULT USER ON THE WINDOWS UBUNTU INSTALL BEING
+# USED FOR CERTIFICATE PROVISIONING.
+
+
+# Determine the appropriate drive from which to run the certificate
+# provisioning routines, and then push to that directory/mount point.
+function initCertProv() {
+  scriptDir="gen"
+  drives=$(mount --type drvfs  | grep -vi ^c | awk '{ print $3 }' | tr '\n' ',')
+
+  IFS=',' read -ra MOUNTP <<< "$drives"    #Convert string to array
+  # Enumerate all mount points from array, testing for one with the wnated dir.
+  for i in "${MOUNTP[@]}"; do
+    if [ -d "$i/$scriptDir" ]; then
+        cd $i/$scriptDir
+        return $?
+    fi
+  done
+}
+
+initCertProv
