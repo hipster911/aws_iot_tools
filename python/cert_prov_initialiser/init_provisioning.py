@@ -5,8 +5,6 @@ import ctypes
 import getpass
 import subprocess
 
-# https://stackoverflow.com/questions/130763/request-uac-elevation-from-within-a-python-script
-
 
 def is_admin():
     try:
@@ -17,8 +15,6 @@ def is_admin():
 
 
 def get_credentials():
-    uname = ''
-    passwd = ''
     try:
         uname = getpass.getuser()
     except Exception as e:
