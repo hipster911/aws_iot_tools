@@ -1,5 +1,6 @@
 import os
 import sys
+from time import sleep
 import ctypes
 import getpass
 import subprocess
@@ -70,12 +71,9 @@ def mount_thumbdrive(letter, mount_point='/mnt/', passwd=''):
 def start_linux_session():
     print('Starting...')
     try:
-        sp = subprocess.Popen(['powershell.exe', 'ubuntu'],
-                              universal_newlines=True,
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE,
-                              shell=True)
-        print('Done starting.')
+        sp = subprocess.Popen('powershell.exe ubuntu',
+                              creationflags=subprocess.CREATE_NEW_CONSOLE)
+
     except FileNotFoundError as e:
         print(e)
         return
@@ -116,7 +114,7 @@ if __name__ == '__main__':
             start = start_linux_session()
             if start:
                 print(start.stdout)
-                input('Started - Press Enter to exit')
+                sleep(3)
                 exit()
         else:
             print('Something went wrong!  Return code = {}'.format(mount.returncode))
