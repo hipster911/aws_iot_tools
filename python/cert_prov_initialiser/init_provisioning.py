@@ -92,7 +92,7 @@ if __name__ == '__main__':
         sys.exit(0)
 
     run_dir = 'path/gen'
-    dl = 'F'  # get_drive_letter()
+    dl = get_drive_letter()
 
     if dl:
         print('Got drive letter: {}'.format(dl))
