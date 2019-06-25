@@ -88,17 +88,21 @@ if __name__ == '__main__':
         sys.exit(0)
 
     run_dir = 'path/gen'
-    dl = get_drive_letter()
+    dl = 'E'  # get_drive_letter()
 
     if dl:
         print('Got drive letter: {}'.format(dl))
         username, password = get_credentials()
         if password:
-            print('Got password: {}'.format(password))
+            # print('Got password: {}'.format(password))
             mount = mount_thumbdrive(dl, passwd=password)
             while mount.returncode is not 0:
-                input('Bad password. Press Enter to try again of <ctl>c to exit.')
+                input('Bad password. Press Enter to try again of <ctl> c to exit.')
                 username, password = get_credentials()
+                if password:
+                    mount = mount_thumbdrive(dl, passwd=password)
+                else:
+                    break
         else:
             print('Didnt get a password; using blank password...')
             mount = mount_thumbdrive(dl)

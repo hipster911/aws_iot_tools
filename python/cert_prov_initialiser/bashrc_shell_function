@@ -5,6 +5,8 @@
 
 # Determine the appropriate drive from which to run the certificate
 # provisioning routines, and then push to that directory/mount point.
+# Be sure the $scriptDir is set to the directory on the thumb drive that
+# hosts the provisioning scripts.
 function initCertProv() {
   scriptDir="gen"
   drives=$(mount --type drvfs  | grep -vi ^c | awk '{ print $3 }' | tr '\n' ',')
@@ -19,4 +21,25 @@ function initCertProv() {
   done
 }
 
+
+# On shell exit, unmount the thumb drive used for certificate provisioning
+# Be sure the $scriptDir is set to the directory on the thumb drive that
+# hosts the provisioning scripts.
+function umountOnExit() {
+  $(cd)
+  scriptDir="gen"
+  drives=$(mount --type drvfs  | grep -vi ^c | awk '{ print $3 }' | tr '\n' ',')
+
+  IFS=',' read -ra MOUNTP <<< "$drives"    #Convert string to array
+  # Enumerate all mount points from array, testing for one with the wanted dir.
+  for i in "${MOUNTP[@]}"; do
+    if [ -d "$i/$scriptDir" ]; then
+        umount $i
+        return $?
+    fi
+  done
+}
+
 initCertProv
+
+trap umountOnExit EXIT
