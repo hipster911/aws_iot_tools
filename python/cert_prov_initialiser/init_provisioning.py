@@ -95,12 +95,12 @@ if __name__ == '__main__':
         username, password = get_credentials()
         if password:
             # print('Got password: {}'.format(password))
-            mount = mount_thumbdrive(dl, passwd=password)
+            mount = mount_thumbdrive(dl, passwd=password.lower())
             while mount.returncode is not 0:
                 input('Bad password. Press Enter to try again of <ctl> c to exit.')
                 username, password = get_credentials()
                 if password:
-                    mount = mount_thumbdrive(dl, passwd=password)
+                    mount = mount_thumbdrive(dl, passwd=password.lower())
                 else:
                     break
         else:
