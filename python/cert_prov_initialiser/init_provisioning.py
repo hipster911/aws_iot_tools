@@ -87,8 +87,8 @@ if __name__ == '__main__':
         ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, sys.argv[0], None, 1)
         sys.exit(0)
 
-    run_dir = 'path/gen'
-    dl = 'E'  # get_drive_letter()
+    run_dir = 'cert/gen'
+    dl = get_drive_letter()
 
     if dl:
         print('Got drive letter: {}'.format(dl))

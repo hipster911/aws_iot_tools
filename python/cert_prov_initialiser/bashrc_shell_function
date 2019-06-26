@@ -8,7 +8,7 @@
 # Be sure the $scriptDir is set to the directory on the thumb drive that
 # hosts the provisioning scripts.
 function initCertProv() {
-  scriptDir="gen"
+  scriptDir="cert/gen"
   drives=$(mount --type drvfs  | grep -vi ^c | awk '{ print $3 }' | tr '\n' ',')
 
   IFS=',' read -ra MOUNTP <<< "$drives"    #Convert string to array
@@ -27,7 +27,7 @@ function initCertProv() {
 # hosts the provisioning scripts.
 function umountOnExit() {
   $(cd)
-  scriptDir="gen"
+  scriptDir="cert/gen"
   drives=$(mount --type drvfs  | grep -vi ^c | awk '{ print $3 }' | tr '\n' ',')
 
   IFS=',' read -ra MOUNTP <<< "$drives"    #Convert string to array
